@@ -10,7 +10,7 @@ import {
 } from 'shared/ReactTypes'
 
 const ReactElement = function (
-  type: Type,
+  type: Type, // 如果标签是hostComponent，type就是'div'，'p'等字符串，如果标签是functionComponent，type就是就是函数本身
   key: Key,
   ref: Ref,
   props: Props,
