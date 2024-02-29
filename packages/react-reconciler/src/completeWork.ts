@@ -5,12 +5,17 @@ import {
   createTextInstance,
 } from 'hostConfig'
 import { FiberNode } from './fiber'
-import { HostComponent, HostRoot, HostText } from './workTags'
+import {
+  FunctionComponent,
+  HostComponent,
+  HostRoot,
+  HostText,
+} from './workTags'
 import { NoFlags } from './fiberFlags'
 
 // 递归中的归阶段
 export const completeWork = (wip: FiberNode) => {
-  // 比较，返回子节点或者null
+  // 构建一棵dom树
   const newProps = wip.pendingProps
   const current = wip.alternate
   switch (wip.tag) {
@@ -43,7 +48,10 @@ export const completeWork = (wip: FiberNode) => {
     case HostRoot:
       bubbleProperties(wip)
       return null
-
+    case FunctionComponent:
+      // 这里不用特殊处理，是因为函数式组件内部的dom，会在其父组件appendAllChildren时递归处理掉
+      bubbleProperties(wip)
+      return null
     default:
       if (__DEV__) {
         console.warn('未处理的complete情况', wip)
