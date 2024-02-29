@@ -9,7 +9,6 @@ import {
 } from './workTags'
 import { reconcileChildFibers, mountChildFibers } from './childFibers'
 import { renderWithHooks } from './fiberHooks'
-
 // 递归中的递阶段，注意，这里参数是wip
 export const beginWork = (wip: FiberNode) => {
   // 比较，返回子fiberNode

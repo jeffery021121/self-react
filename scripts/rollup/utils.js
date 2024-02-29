@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import ts from 'rollup-plugin-typescript2'
 import cjs from '@rollup/plugin-commonjs'
-import place from '@rollup/plugin-replace'
+import replace from '@rollup/plugin-replace'
 
 
 const pkgPath = path.resolve(__dirname, '../../packages')
@@ -28,5 +28,5 @@ export function getBaseRollupPlugins({ typescript = {}, alias = {
   __DEV__: true,
   preventAssignment: true
 } } = {}) {
-  return [place(alias), cjs(), ts(typescript)]
+  return [replace(alias), cjs(), ts(typescript)]
 }
