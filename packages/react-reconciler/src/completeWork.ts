@@ -1,4 +1,5 @@
 import {
+  Container,
   appendInitialChild,
   createInstance,
   createTextInstance,
@@ -32,7 +33,8 @@ export const completeWork = (wip: FiberNode) => {
       } else {
         // mount
         // 1.构建dom
-        const instance = createTextInstance(wip.type, newProps)
+        // props参见 reconcileSingleTextNode方法。
+        const instance = createTextInstance(newProps.content)
         wip.stateNode = instance
       }
       bubbleProperties(wip)
@@ -50,7 +52,7 @@ export const completeWork = (wip: FiberNode) => {
   }
 }
 
-function appendAllChildren(parent: FiberNode, wip: FiberNode) {
+function appendAllChildren(parent: Container, wip: FiberNode) {
   // 这个parent其实应该是 wip对应的各自宿主环境的实例。
   /* 
     eg: 本例主要是演示，ReactElement的children 和 domNode的children可能不太一致。本方法就是通过fiber关系，合理挂载parentDom的children。

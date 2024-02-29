@@ -27,8 +27,10 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 
   function placeSingleChild(fiber: FiberNode) {
     if (shouldTrackEffects && fiber.alternate === null) {
-      // shouldTrackEffects应该追踪副作用，且current为nul 新节点。即update阶段的新节点
+      // shouldTrackEffects应该追踪副作用，且current为nul 新节点。即update阶段的新节点。
+      // 同时mount阶段，App对应的fiber也会进来
       fiber.flags |= Placement // 按位或 其实这里如果是初始创建，可以直接用 =
+      console.warn('fiber被标记Placement', fiber)
     }
     return fiber
   }
