@@ -22,7 +22,7 @@ export class FiberNode {
   memoizedProps: Props | null // 处理完成之后的props
   memoizedState: any // 处理完成之后的state
   alternate: FiberNode | null // 指向另一棵树上的相同节点
-  updateQueue: UpdateQueue<unknown>
+  updateQueue: unknown
 
   // 副作用
   flags: Flags
@@ -46,8 +46,8 @@ export class FiberNode {
     this.pendingProps = pendingProps
     this.memoizedProps = null
     this.alternate = null // 指向另一棵fiber树上的相同节点
-    this.updateQueue = null as unknown as UpdateQueue<unknown>
-    this.memoizedState = null
+    this.updateQueue = null
+    this.memoizedState = null // functionComponent中指向了第0项hook,hook内部通过next指针，指向下一个hook
     // 副作用
     this.flags = NoFlags
     this.subtreeFlags = NoFlags
