@@ -26,7 +26,7 @@ const ReactElement = function (
   return element
 }
 
-export const jsx = (type: ElementType, config: any, maybeChildren: any) => {
+export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
   // 特殊处理config中的 key和ref，单独从config中提出,其他放入props
   let key: Key = null
   let ref: Ref = null
@@ -35,7 +35,7 @@ export const jsx = (type: ElementType, config: any, maybeChildren: any) => {
     if (Object.prototype.hasOwnProperty.call(config, propKey)) {
       const val = config[propKey]
       if (propKey === 'key') {
-        if (val !== undefined) key = val
+        if (val !== undefined) key = '' + val
         continue
       }
       if (propKey === 'ref') {
@@ -47,7 +47,7 @@ export const jsx = (type: ElementType, config: any, maybeChildren: any) => {
   }
 
   // 处理maybeChildren
-  const maybeChildrenLength: number = maybeChildren.length
+  const maybeChildrenLength: number = maybeChildren?.length
   if (maybeChildrenLength) {
     // child || [child1, child2, child3]
     if (maybeChildrenLength === 1) {
@@ -68,7 +68,7 @@ export const jsxDEV = (type: ElementType, config: any) => {
     if (Object.prototype.hasOwnProperty.call(config, propKey)) {
       const val = config[propKey]
       if (propKey === 'key') {
-        if (val !== undefined) key = val
+        if (val !== undefined) key = '' + val
         continue
       }
       if (propKey === 'ref') {
@@ -80,4 +80,12 @@ export const jsxDEV = (type: ElementType, config: any) => {
   }
 
   return ReactElement(type, key, ref, props)
+}
+
+export const isValidElement = (object: any) => {
+  return (
+    typeof object === 'object' &&
+    object !== null &&
+    object.$$typeof === REACT_ELEMENT_TYPE
+  )
 }

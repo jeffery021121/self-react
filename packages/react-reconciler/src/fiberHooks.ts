@@ -56,14 +56,20 @@ function mountState<State>(
   const updateQueue = createUpdateQueue<State>()
   hook.updateQueue = updateQueue
 
-  const dispatch = dispatchSetState.bind<
-    null, // thisArg
-    [FiberNode, UpdateQueue<State>], // 本次bind会绑定的参数元组
-    [Action<State>], // 剩余参数元组
-    void // 函数最终执行返回值
-  >(null, currentlyRenderingFiber!, updateQueue)
+  const dispatch = dispatchSetState.bind(
+    null,
+    currentlyRenderingFiber!,
+    updateQueue as UpdateQueue<unknown>,
+  )
   // 最后一个参数 action，需要在dispatch调用时传入。
   // 使用了bind，意味着dispatch可以脱离函数组件甚至react环境使用，因为其内部已经绑定好了fiber
+  interface Abc {
+    bind<T, A extends any[], B extends any[], R>(
+      this: (this: T, ...args: [...A, ...B]) => R,
+      thisArg: T,
+      ...args: A
+    ): (...args: B) => R
+  }
 
   updateQueue.dispatch = dispatch
   hook.memoizedState = memoizedState

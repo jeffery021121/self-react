@@ -8,18 +8,18 @@ const pkgPath = resolvePkgPath(name)
 const pkgDistPath = resolvePkgPath(name, true)
 // react,jsx,jsx-dev
 export default [
-  // react-dom
   {
+    // react-dom
     input: `${pkgPath}/${module}`,
     output: [
       {
         file: `${pkgDistPath}/index.js`,
-        name: 'index.js',
+        name: 'ReactDOM', // 这个name字段，是给umd时 window全局调用的 -》 window.ReactDom就会找到该文件
         format: 'umd'
       },
       {
         file: `${pkgDistPath}/client.js`,
-        name: 'client.js',
+        name: 'client',
         format: 'umd'
       }
     ],
@@ -45,5 +45,18 @@ export default [
           main: 'index.js'
         })
       })],
+  },
+  {
+    // react-test-utils
+    input: `${pkgPath}/test-utils.ts`,
+    output: [
+      {
+        file: `${pkgDistPath}/test-utils.js`,
+        name: 'testUtils', // 这个name字段，是给umd时 window全局调用的 -》 window[name] 就会找到该文件
+        format: 'umd'
+      },
+    ],
+    external: ['react', 'react-dom'],
+    plugins: getBaseRollupPlugins()
   }
 ]
