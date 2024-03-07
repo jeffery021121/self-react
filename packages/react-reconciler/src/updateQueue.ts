@@ -40,13 +40,16 @@ export const processUpdateQueue = <State>(
   pendingUpdate: Update<State>,
 ): { memoizedState: State } => {
   const result = { memoizedState: baseState }
-  const action = pendingUpdate.action
-  if (action instanceof Function) {
-    // action: (prevState:State)=>State
-    result.memoizedState = action(baseState)
-  } else {
-    // action: State
-    result.memoizedState = action
+  if (pendingUpdate !== null) {
+    // 一般来说大部分queue里是没有update的
+    const action = pendingUpdate.action
+    if (action instanceof Function) {
+      // action: (prevState:State)=>State
+      result.memoizedState = action(baseState)
+    } else {
+      // action: State
+      result.memoizedState = action
+    }
   }
 
   return result

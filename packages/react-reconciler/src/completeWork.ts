@@ -11,17 +11,18 @@ import {
   HostRoot,
   HostText,
 } from './workTags'
-import { NoFlags } from './fiberFlags'
+import { NoFlags, Update } from './fiberFlags'
 
 // 递归中的归阶段
 export const completeWork = (wip: FiberNode) => {
   // 构建一棵dom树
   const newProps = wip.pendingProps
   const current = wip.alternate
+  // NOTE: complete阶段，wip的memoizedProps已经被pendingProps赋值过了
   switch (wip.tag) {
     case HostComponent:
       if (current !== null && wip.stateNode) {
-        // update
+        // update TODO: 比较两个fiber的各种属性
       } else {
         // mount
         // 1.构建dom
@@ -35,6 +36,9 @@ export const completeWork = (wip: FiberNode) => {
     case HostText:
       if (current !== null && wip.stateNode) {
         // update
+        if (current.memoizedProps.content !== newProps.content) {
+          markUpdate(wip)
+        }
       } else {
         // mount
         // 1.构建dom
@@ -121,4 +125,8 @@ function bubbleProperties(wip: FiberNode) {
     child = child.sibling
   }
   wip.subtreeFlags = subtreeFlags
+}
+
+function markUpdate(wip: FiberNode) {
+  wip.flags |= Update
 }

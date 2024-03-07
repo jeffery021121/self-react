@@ -52,6 +52,7 @@ function updateHostRoot(wip: FiberNode) {
   updateQueue.shared.pending = null
 
   // 这里由于update.action并不是函数类型， 所以会直接把 ElementApp赋值给 memoizedState
+  // NOTE: update阶段pending是空的，所以还是返回第一次运行后的 memoizedState，即 ElementApp
   const { memoizedState } = processUpdateQueue(baseState, pending)
   wip.memoizedState = memoizedState
   // 返回子fiberNode

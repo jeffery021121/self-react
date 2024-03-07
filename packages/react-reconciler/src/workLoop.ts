@@ -40,6 +40,7 @@ function renderRoot(root: FiberRootNode) {
     } catch (e) {
       if (__DEV__) {
         console.warn('workLoop发生错误', e)
+        workInProgress = null
       }
     }
   } while (true)
@@ -86,6 +87,7 @@ function workLoop() {
 
 function performUnitOfWork(wip: FiberNode) {
   const next = beginWork(wip)
+  // NOTE: beginWork流程结束以后，wip的memoizedProps被赋值成pendingProps，为什么在此时赋值？
   wip.memoizedProps = wip.pendingProps
   if (next === null) {
     completeUnitOfWork(wip)
