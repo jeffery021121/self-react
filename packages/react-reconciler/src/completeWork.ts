@@ -12,6 +12,7 @@ import {
   HostText,
 } from './workTags'
 import { NoFlags, Update } from './fiberFlags'
+import { updateFiberProps } from 'react-dom/src/SyntheticEvent'
 
 // 递归中的归阶段
 export const completeWork = (wip: FiberNode) => {
@@ -23,6 +24,12 @@ export const completeWork = (wip: FiberNode) => {
     case HostComponent:
       if (current !== null && wip.stateNode) {
         // update TODO: 比较两个fiber的各种属性
+        // 1. props是否变化 eg: className a -> className b
+        // 2. 如果变了，执行markUpdate(wip)
+        // 3. 保存变化的值，用来后续再commit流程，更新dom 把变化保存在updateQueue中
+        // 源码这段逻辑，没有找到，可能和后面的bailout有关
+        // 如果有变化，要重新绑定props到dom上
+        updateFiberProps(wip.stateNode, newProps)
       } else {
         // mount
         // 1.构建dom
