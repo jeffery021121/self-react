@@ -1,7 +1,9 @@
 import {
   Container,
+  Instance,
   appendChildToContainer,
   commitUpdate,
+  insertChildToContainer,
   removeChild,
 } from 'hostConfig'
 import { FiberNode, FiberRootNode } from './fiber'
@@ -86,9 +88,16 @@ function commitPlacement(finishedWork: FiberNode) {
   // parent Dom
   const hostParent = getHostParent(finishedWork)
 
+  // hostSibling，如果能找到hostSibling，那就是移动，如果找不到，就是插入
+  const hostSibling = getHostSibling(finishedWork)
+
   // 找到finishedWork对应的dom，并插入到hostParent
   if (hostParent !== null) {
-    appendPlacementNodeIntoContainer(finishedWork, hostParent)
+    insertOrAppendPlacementNodeIntoContainer(
+      finishedWork,
+      hostParent,
+      hostSibling,
+    )
   }
 }
 
@@ -109,21 +118,72 @@ function getHostParent(finishedWork: FiberNode): Container | null {
   }
   return null
 }
+function getHostSibling(fiber: FiberNode) {
+  let node: FiberNode = fiber
+  fiberSibling: while (true) {
+    while (node.sibling === null) {
+      // 如果node没有sibling,就需要向上找到有sibling的祖先
+      const parent = node.return
+      if (
+        parent === null ||
+        parent.tag === HostComponent ||
+        parent.tag === HostRoot
+      ) {
+        // 终止条件，往上找到的元素如果是null，一般来说，不会存在这一情况，除非是hostRoot节点
+        // 终止条件，往上找到的元素如果是HostComponent或者HostRoot，那么证明node是没有hostSibling的
+        return null
+      }
+      node = parent
+    }
+    node.sibling.return = node.return
+    node = node.sibling
+    // 运行到这里，确保了node一定有sibling,将node指针指向sibling开始向下查找的过程。
+    while (node.tag !== HostText && node.tag !== HostComponent) {
+      // 向下遍历
+      if ((node.flags & Placement) !== NoFlags) {
+        // 如果本节点不稳定，那么用它再向下查找hostNode，已经没有意义了。
+        // 因为父节点的不稳定导致了子hostNode节点也不稳定。跳出本次向下循环。check本节点的兄弟节点。
+        continue fiberSibling // 这里不要使用break，因为有可能终止所有循环
+      }
+      if (node.child === null) {
+        // eg： render(){return false}
+        // 已经到达叶子节点。跳出本次向下遍历。进入横向查找阶段。
+        continue fiberSibling
+      } else {
+        // 稳定的 非HostNode 非叶子节点，继续向下遍历
+        node.child.return = node
+        node = node.child
+      }
+    }
 
-function appendPlacementNodeIntoContainer(
+    // 能进入到这里，证明一定结束了上个循环，且没有跳过本次fiberSibling循环，即找到了HostNode节点
+    // 如果该hostNode不稳定，会进入到下一个fiberSibling循环
+    if ((node.flags & Placement) === NoFlags) {
+      // 稳定的sibling节点
+      return node.stateNode
+    }
+  }
+}
+
+function insertOrAppendPlacementNodeIntoContainer(
   finishedWork: FiberNode,
   hostParent: Container,
+  before?: Instance,
 ) {
   if (finishedWork.tag === HostComponent || finishedWork.tag === HostText) {
-    appendChildToContainer(hostParent, finishedWork.stateNode)
+    if (before) {
+      insertChildToContainer(finishedWork.stateNode, hostParent, before)
+    } else {
+      appendChildToContainer(hostParent, finishedWork.stateNode)
+    }
     return
   }
   const child = finishedWork.child
   if (child !== null) {
-    appendPlacementNodeIntoContainer(child, hostParent)
+    insertOrAppendPlacementNodeIntoContainer(child, hostParent, before) // NOTE: 这里应该加上before
     let sibling = child.sibling
     while (sibling !== null) {
-      appendPlacementNodeIntoContainer(sibling, hostParent)
+      insertOrAppendPlacementNodeIntoContainer(sibling, hostParent, before)
       sibling = sibling.sibling
     }
   }
