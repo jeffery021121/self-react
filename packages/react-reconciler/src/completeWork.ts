@@ -6,6 +6,7 @@ import {
 } from 'hostConfig'
 import { FiberNode } from './fiber'
 import {
+  Fragment,
   FunctionComponent,
   HostComponent,
   HostRoot,
@@ -16,7 +17,7 @@ import { updateFiberProps } from 'react-dom/src/SyntheticEvent'
 
 // 递归中的归阶段
 export const completeWork = (wip: FiberNode) => {
-  // 构建一棵dom树
+  // NOTE: 构建一棵dom树, 冒泡副作用，标记update(属性变化)
   const newProps = wip.pendingProps
   const current = wip.alternate
   // NOTE: complete阶段，wip的memoizedProps已经被pendingProps赋值过了
@@ -57,9 +58,8 @@ export const completeWork = (wip: FiberNode) => {
 
       return null
     case HostRoot:
-      bubbleProperties(wip)
-      return null
     case FunctionComponent:
+    case Fragment:
       // 这里不用特殊处理，是因为函数式组件内部的dom，会在其父组件appendAllChildren时递归处理掉
       bubbleProperties(wip)
       return null

@@ -1,9 +1,13 @@
-import { REACT_ELEMENT_TYPE } from 'shared/ReactSymbols'
 import currentDispatcher, {
   Dispatcher,
   resolveDispatcher,
 } from './src/currentDispatcher'
-import { jsxDEV, jsx, isValidElement as isValidElementFn } from './src/jsx'
+import {
+  jsxDEV,
+  jsx,
+  isValidElement as isValidElementFn,
+  Fragment as FragmentType,
+} from './src/jsx'
 
 export const useState: Dispatcher['useState'] = initialState => {
   const dispatcher = resolveDispatcher()
@@ -23,6 +27,8 @@ export const version = '0.0.0'
 export const createElement = jsx
 
 export const isValidElement = isValidElementFn
+
+export const Fragment = FragmentType
 
 // export default {
 //   version: '0.0.0',

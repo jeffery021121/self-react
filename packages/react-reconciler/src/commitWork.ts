@@ -56,7 +56,6 @@ function commitMutationEffectsOnFiber(finishedWork: FiberNode) {
   // 处理Placement 标记
   if ((flags & Placement) !== NoFlags) {
     commitPlacement(finishedWork)
-    // NOTE: finishedWork.flags 移除Placement标记
     finishedWork.flags &= ~Placement // 从flags中，移除Placement标记
   }
 
@@ -70,13 +69,11 @@ function commitMutationEffectsOnFiber(finishedWork: FiberNode) {
       })
     }
 
-    // NOTE: finishedWork.flags 移除Placement标记
     finishedWork.flags &= ~ChildDeletion // 从flags中，移除Placement标记
   }
   // 处理Update 标记
   if ((flags & Update) !== NoFlags) {
     commitUpdate(finishedWork)
-    // NOTE: finishedWork.flags 移除Placement标记
     finishedWork.flags &= ~Update // 从flags中，移除Placement标记
   }
 }
@@ -188,24 +185,55 @@ function insertOrAppendPlacementNodeIntoContainer(
     }
   }
 }
-
+function recordHostChildrenToDelete(
+  childrenToDelete: FiberNode[],
+  unmountFiber: FiberNode, // 一定是dom节点
+) {
+  // NOTE: 删除所有 rootNode
+  let lastOne = childrenToDelete[childrenToDelete.length - 1]
+  // 1. 找到第一个root host节点
+  if (!lastOne) {
+    childrenToDelete.push(unmountFiber)
+  } else {
+    // NOTE: 因为是dfs遍历，所以如果lastOne有兄弟host节点(fragment的情况)，最终会遍历到这个兄弟节点的
+    /**
+     * <>
+     *  <span id='1'>spanChild1</span>
+     *  <span id='2'>spanChild2</span>
+     * </>
+     *
+     * unmountFiber=id为1的span 会被记录成第一个lastOne，然后dfs处理 文本节点spanChild1，
+     * 再向上到 unmountFiber=id为2的span，由于它是lastOne的兄弟节点，所以它也会被加入到 childrenToDelete 数组中
+     */
+    // 2. 每找到一个host节点，判断这个节点是不是 1 找到那个节点的兄弟节点
+    let node = lastOne.sibling
+    while (node) {
+      if (unmountFiber === node) {
+        childrenToDelete.push(unmountFiber)
+      }
+      node = node.sibling
+    }
+  }
+}
 function commitDeletion(childToDelete: FiberNode) {
-  let rootHostNode: FiberNode | null = null
-  // dfs处理子树
+  const rootChildrenToDelete: FiberNode[] = []
+  // NOTE: dfs处理子树（执行ref解绑，调用unmount相关钩子函数），找到根hostNode，并删除。
   commitNestComponent(childToDelete, unmountFiber => {
     // 根据不同的类型，做不同处理
     switch (unmountFiber.tag) {
       case HostComponent:
         // TODO: 解除ref绑定
 
-        if (rootHostNode === null) {
-          rootHostNode = unmountFiber
-        }
+        // if (rootHostNode === null) {
+        //   rootHostNode = unmountFiber
+        // }
+        recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber)
         return
       case HostText:
-        if (rootHostNode === null) {
-          rootHostNode = unmountFiber
-        }
+        // if (rootHostNode === null) {
+        //   rootHostNode = unmountFiber
+        // }
+        recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber)
         return
       case FunctionComponent:
         // TODO: useEffect unMount流程处理
@@ -217,10 +245,12 @@ function commitDeletion(childToDelete: FiberNode) {
     }
   })
   // 移除根dom
-  if (rootHostNode !== null) {
+  if (rootChildrenToDelete.length) {
     const hostParent = getHostParent(childToDelete)
     if (hostParent !== null) {
-      removeChild((rootHostNode as FiberNode).stateNode, hostParent)
+      rootChildrenToDelete.forEach(node => {
+        removeChild(node.stateNode, hostParent)
+      })
     }
   }
   childToDelete.return = null

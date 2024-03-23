@@ -2,6 +2,7 @@ import { ReactElement } from 'shared/ReactTypes'
 import { FiberNode } from './fiber'
 import { UpdateQueue, processUpdateQueue } from './updateQueue'
 import {
+  Fragment,
   FunctionComponent,
   HostComponent,
   HostRoot,
@@ -10,6 +11,7 @@ import {
 import { reconcileChildFibers, mountChildFibers } from './childFibers'
 import { renderWithHooks } from './fiberHooks'
 // 递归中的递阶段，注意，这里参数是wip
+// NOTE: 构建wip链表树，标记placement(新增和右移)和childDeletion
 export const beginWork = (wip: FiberNode) => {
   // 比较，返回子fiberNode
   switch (wip.tag) {
@@ -21,6 +23,8 @@ export const beginWork = (wip: FiberNode) => {
       return null
     case FunctionComponent:
       return updateFunctionComponent(wip)
+    case Fragment:
+      return updateFragment(wip)
 
     default:
       if (__DEV__) {
@@ -29,6 +33,18 @@ export const beginWork = (wip: FiberNode) => {
       break
   }
   return null
+}
+
+function updateFragment(wip: FiberNode) {
+  /**
+   * NOTE:
+   * 在父fiber reconcileChildFibers时，如果发现子element是 fragment
+   * 会直接让 子element.props.children 作为其 对应子fiber的 pendingProps
+   * 于是在这里取 fragment的 children时，直接用 fiber.pendingProps即可。
+   *   */
+  const nextChildren = wip.pendingProps
+  reconcileChildren(wip, nextChildren)
+  return wip.child
 }
 
 function updateFunctionComponent(wip: FiberNode) {
