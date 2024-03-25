@@ -2,7 +2,7 @@ import { Props, Key, Ref, ReactElement } from 'shared/ReactTypes'
 import { FunctionComponent, HostComponent, Fragment, WorkTag } from './workTags'
 import { Flags, NoFlags } from './fiberFlags'
 import { Container } from 'hostConfig'
-import { UpdateQueue } from './updateQueue'
+import { Lane, Lanes, NoLane, NoLanes } from './fiberLanes'
 export class FiberNode {
   // 实例相关属性
   tag: WorkTag // 四种数字分别表示，函数和类组件；根节点；宿主组件(浏览器下就是div,p等)；宿主文字
@@ -60,11 +60,15 @@ export class FiberRootNode {
   container: Container // 在dom环境下，就是那个 #app的 dom
   current: FiberNode // currentRootFiber
   finishedWork: FiberNode | null // 已经完成整个更新流程的 rootFiber
+  pendingLanes: Lanes // 所有得渲染的优先级
+  finishedLane: Lane // 本次处理的优先级
   constructor(container: Container, hostRootFiber: FiberNode) {
     this.container = container
     this.current = hostRootFiber
     this.current.stateNode = this
     this.finishedWork = null
+    this.pendingLanes = NoLanes
+    this.finishedLane = NoLane
   }
 }
 

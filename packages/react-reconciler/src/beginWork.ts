@@ -10,19 +10,20 @@ import {
 } from './workTags'
 import { reconcileChildFibers, mountChildFibers } from './childFibers'
 import { renderWithHooks } from './fiberHooks'
+import { Lane } from './fiberLanes'
 // 递归中的递阶段，注意，这里参数是wip
 // NOTE: 构建wip链表树，标记placement(新增和右移)和childDeletion
-export const beginWork = (wip: FiberNode) => {
+export const beginWork = (wip: FiberNode, renderLane: Lane) => {
   // 比较，返回子fiberNode
   switch (wip.tag) {
     case HostRoot:
-      return updateHostRoot(wip)
+      return updateHostRoot(wip, renderLane)
     case HostComponent:
       return updateHostComponent(wip)
     case HostText:
       return null
     case FunctionComponent:
-      return updateFunctionComponent(wip)
+      return updateFunctionComponent(wip, renderLane)
     case Fragment:
       return updateFragment(wip)
 
@@ -47,13 +48,13 @@ function updateFragment(wip: FiberNode) {
   return wip.child
 }
 
-function updateFunctionComponent(wip: FiberNode) {
-  const nextChildren = renderWithHooks(wip)
+function updateFunctionComponent(wip: FiberNode, renderLane: Lane) {
+  const nextChildren = renderWithHooks(wip, renderLane)
   reconcileChildren(wip, nextChildren)
   return wip.child
 }
 
-function updateHostRoot(wip: FiberNode) {
+function updateHostRoot(wip: FiberNode, renderLane: Lane) {
   const baseState = wip.memoizedState // 初始化阶段，其为null
 
   /**
@@ -69,7 +70,7 @@ function updateHostRoot(wip: FiberNode) {
 
   // 这里由于update.action并不是函数类型， 所以会直接把 ElementApp赋值给 memoizedState
   // NOTE: update阶段pending是空的，所以还是返回第一次运行后的 memoizedState，即 ElementApp
-  const { memoizedState } = processUpdateQueue(baseState, pending)
+  const { memoizedState } = processUpdateQueue(baseState, pending, renderLane)
   wip.memoizedState = memoizedState
   // 返回子fiberNode
   const nextChildren = wip.memoizedState // ElementApp 即是rootComponent的子element

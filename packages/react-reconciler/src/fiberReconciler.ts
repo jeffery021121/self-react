@@ -9,6 +9,7 @@ import {
 } from './updateQueue'
 import { ReactElement } from 'shared/ReactTypes'
 import { scheduleUpdateOnFiber } from './workLoop'
+import { requestUpdateLane } from './fiberLanes'
 // ReactDom.createRoot(rootElement).render(<App>)
 
 // ReactDom.createRoot(rootElement)时调用
@@ -27,11 +28,14 @@ export function updateContainer(
 ) {
   const hostRootFiber = root.current
   // 首屏渲染，创建一个 update
-  const update = createUpdate<ReactElement | null>(element) // 这里其实比较有疑问，可能是reducer定式导致的，认为这里的action必须是一个状态，或者状态相关函数
+
+  const lane = requestUpdateLane()
+
+  const update = createUpdate<ReactElement | null>(element, lane) // 这里其实比较有疑问，可能是reducer定式导致的，认为这里的action必须是一个状态，或者状态相关函数
   enqueueUpdate(
     hostRootFiber.updateQueue as UpdateQueue<ReactElement | null>,
     update,
   )
-  scheduleUpdateOnFiber(hostRootFiber)
+  scheduleUpdateOnFiber(hostRootFiber, lane)
   return element // 这里不太理解，为什么要return element
 }

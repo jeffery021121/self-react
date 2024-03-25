@@ -3,47 +3,23 @@ import ReactDOM from 'react-dom/client'
 
 function App() {
   const [num, setNum] = useState(100)
-  // window.setNum = setNum
-  const arr =
-    num % 2
-      ? [<li key='1'>1</li>, <li key='2'>2</li>, <li key='3'>3</li>]
-      : [<li key='3'>3</li>, <li key='2'>2</li>, <li key='1'>1</li>]
-  // return (
-  //   <ul>
-  //     <>
-  //       <li>1</li>
-  //       <li>2</li>
-  //     </>
-  //     <li>3</li>
-  //     <li>4</li>
-  //   </ul>
-  // )
-  // if (num % 2 === 0) {
-  //   return (
-  //     <div onClick={() => setNum(num + 1)}>
-  //       <>
-  //         <p>singleFragment1</p>
-  //         <p>singleFragment2</p>
-  //       </>
-  //       <p>1</p>
-  //     </div>
-  //   )
-  // }
-  // return (
-  //   <div onClick={() => setNum(num + 1)}>
-  //     <p>1</p>
-  //   </div>
-  // )
 
   return (
-    <ul onClick={() => setNum(num + 1)}>
-      {arr}
-
-      <li key='4'>4</li>
-      <Fragment>
-        <div>b</div>
-        {!!(num % 2) && <div>a</div>}
-      </Fragment>
+    <ul
+      onClick={() => {
+        setNum(num => num + 1)
+        setNum(num => num + 1)
+        setNum(num => num + 1)
+        let node = document.getElementsByTagName('ul')[0]
+        console.log('sync', node.innerText)
+        Promise.resolve().then(() => {
+          console.log('microTask:', node.innerText)
+        })
+        setTimeout(() => {
+          console.log('task:', node.innerText)
+        })
+      }}>
+      {num}
     </ul>
   )
 }
