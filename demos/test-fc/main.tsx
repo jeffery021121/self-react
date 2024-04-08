@@ -1,40 +1,32 @@
-import React, { useState, Fragment } from 'react'
+import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 
 function App() {
-  const [num, setNum] = useState(100)
+  const [num, updateNum] = useState(0)
+  useEffect(() => {
+    console.log('App mount')
+  }, [])
+
+  useEffect(() => {
+    console.log('num change create', num)
+    return () => {
+      console.log('num change destroy', num)
+    }
+  }, [num])
 
   return (
-    <ul
-      onClick={() => {
-        setNum(num => num + 1)
-        setNum(num => num + 1)
-        setNum(num => num + 1)
-        let node = document.getElementsByTagName('ul')[0]
-        console.log('sync', node.innerText)
-        Promise.resolve().then(() => {
-          console.log('microTask:', node.innerText)
-        })
-        setTimeout(() => {
-          console.log('task:', node.innerText)
-        })
-      }}>
-      {num}
-    </ul>
-  )
-}
-function Child() {
-  const arr = [<li>c</li>, <li>d</li>]
-  return (
-    <div>
-      <span>reactDemo</span>
+    <div onClick={() => updateNum(num + 1)}>
+      {num === 0 ? <Child /> : 'noop'}
     </div>
   )
 }
+
+function Child() {
+  useEffect(() => {
+    console.log('Child mount')
+    return () => console.log('Child unmount')
+  }, [])
+
+  return 'i am child'
+}
 ReactDOM.createRoot(document.getElementById('root')!).render((<App />) as any)
-let aa = (
-  <div>
-    <p>1</p>
-    <p>2</p>
-  </div>
-)

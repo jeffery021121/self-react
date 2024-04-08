@@ -1,9 +1,19 @@
 import { scheduleMicroTask } from 'hostConfig'
 import { beginWork } from './beginWork'
-import { commitMutationEffects } from './commitWork'
+import {
+  commitHookEffectListCreate,
+  commitHookEffectListDestroy,
+  commitHookEffectListUnmount,
+  commitMutationEffects,
+} from './commitWork'
 import { completeWork } from './completeWork'
-import { FiberNode, FiberRootNode, createWorkInProgress } from './fiber'
-import { MutationMask, NoFlags } from './fiberFlags'
+import {
+  FiberNode,
+  FiberRootNode,
+  PendingPassiveEffects,
+  createWorkInProgress,
+} from './fiber'
+import { MutationMask, NoFlags, PassiveMask } from './fiberFlags'
 import {
   Lane,
   NoLane,
@@ -14,9 +24,15 @@ import {
 } from './fiberLanes'
 import { flushSyncCallbacks, scheduleSyncCallback } from './syncTaskQueue'
 import { HostRoot } from './workTags'
+import {
+  unstable_scheduleCallback as scheduleCallback,
+  unstable_NormalPriority as NormalPriority,
+} from 'scheduler'
+import { HookHasEffect, Passive } from './hookEffectTags'
 
 let workInProgress: FiberNode | null
 let wipRenderLane: Lane = NoLane
+let rootDoesHavePassiveEffects: boolean = false
 
 function prepareFreshStack(root: FiberRootNode, lane: Lane) {
   // 初始化
@@ -118,21 +134,60 @@ function commitRoot(root: FiberRootNode) {
   root.finishedWork = null
   root.finishedLane = NoLane
   markRootFinished(root, lane)
+
+  if (
+    (finishedWork.flags & PassiveMask) !== NoFlags ||
+    (finishedWork.subtreeFlags & PassiveMask) !== NoFlags
+  ) {
+    if (!rootDoesHavePassiveEffects) {
+      rootDoesHavePassiveEffects = true
+      // 调度副作用
+      scheduleCallback(NormalPriority, () => {
+        // 异步执行副作用
+        flushPassiveEffect(root.pendingPassiveEffects)
+        return
+      })
+    }
+  }
   // 判断是否存在3个子阶段需要执行的操作
   const subtreeHasEffects =
-    (finishedWork.subtreeFlags & MutationMask) !== NoFlags
-  const rootHasEffect = (finishedWork.flags & MutationMask) !== NoFlags
+    (finishedWork.subtreeFlags & (MutationMask | PassiveMask)) !== NoFlags
+  const rootHasEffect =
+    (finishedWork.flags & (MutationMask | PassiveMask)) !== NoFlags
 
   if (subtreeHasEffects || rootHasEffect) {
-    // beforeMutation
-    // mutation 处理MutationMask相关的flags
-    commitMutationEffects(finishedWork)
+    // beforeMutation阶段
+    // mutation 处理MutationMask相关的flags，处理PassiveMask相关flags
+    // 处理普通flag成dom操作，处理PassiveEffect flag，收集副作用
+    commitMutationEffects(finishedWork, root)
     root.current = finishedWork // 双缓冲
 
-    // layout
+    // layout阶段
   } else {
     root.current = finishedWork // 双缓冲
   }
+  rootDoesHavePassiveEffects = false
+  ensureRootIsScheduled(root) // NOTE: 可能会存在多个不同优先级的任务，本次处理完以后，处理下一个优先级
+}
+
+function flushPassiveEffect(pendingPassiveEffects: PendingPassiveEffects) {
+  // 处理卸载需要执行的effect
+  pendingPassiveEffects.unMount.forEach(effect => {
+    commitHookEffectListUnmount(Passive, effect)
+  })
+  pendingPassiveEffects.unMount = []
+
+  // 处理deps变化触发的effect
+  pendingPassiveEffects.update.forEach(effect => {
+    commitHookEffectListDestroy(Passive | HookHasEffect, effect)
+  })
+  pendingPassiveEffects.update.forEach(effect => {
+    commitHookEffectListCreate(Passive | HookHasEffect, effect)
+  })
+  pendingPassiveEffects.update = []
+
+  // effect注册函数执行过程中，可能会产生新的更新
+  flushSyncCallbacks()
 }
 
 function workLoop() {
