@@ -1,5 +1,6 @@
 import {
   Container,
+  Instance,
   appendInitialChild,
   createInstance,
   createTextInstance,
@@ -13,7 +14,6 @@ import {
   HostText,
 } from './workTags'
 import { NoFlags, Update } from './fiberFlags'
-import { updateFiberProps } from 'react-dom/src/SyntheticEvent'
 
 // 递归中的归阶段
 export const completeWork = (wip: FiberNode) => {
@@ -30,7 +30,7 @@ export const completeWork = (wip: FiberNode) => {
         // 3. 保存变化的值，用来后续再commit流程，更新dom 把变化保存在updateQueue中
         // 源码这段逻辑，没有找到，可能和后面的bailout有关
         // 如果有变化，要重新绑定props到dom上
-        updateFiberProps(wip.stateNode, newProps)
+        markUpdate(wip)
       } else {
         // mount
         // 1.构建dom
@@ -71,7 +71,7 @@ export const completeWork = (wip: FiberNode) => {
   }
 }
 
-function appendAllChildren(parent: Container, wip: FiberNode) {
+function appendAllChildren(parent: Container | Instance, wip: FiberNode) {
   // 这个parent其实应该是 wip对应的各自宿主环境的实例。
   /* 
     eg: 本例主要是演示，ReactElement的children 和 domNode的children可能不太一致。本方法就是通过fiber关系，合理挂载parentDom的children。

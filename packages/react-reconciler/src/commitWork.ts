@@ -84,6 +84,10 @@ function commitMutationEffectsOnFiber(
   }
   // 处理Update 标记
   if ((flags & Update) !== NoFlags) {
+    /**
+     * NOTE: 这个要在宿主环境中实现，因为不同宿主环境，api或者字段值是不同的
+     * 具体可以理解成props中例如事件的更新，是和宿主环境强绑定的，所以整个commitUpdate的实现，要在hostConfig中
+     */
     commitUpdate(finishedWork)
     finishedWork.flags &= ~Update // 从flags中，移除Placement标记
   }
